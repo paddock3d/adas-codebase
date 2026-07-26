@@ -44,3 +44,25 @@ coupled to which, and why.
 - **AHC** -- Adaptive Headlight Control (ASIL A, Low priority)
 - **SVM** -- Surround View Monitor (ASIL A, Low priority)
 - **TJA** -- Traffic Jam Assist (ASIL D, Critical priority)
+
+
+## Changelog -- v2 (inline additions to ACC and AEB)
+
+Two new requirements/capabilities were added directly inside the existing
+`acc.py` and `aeb.py` files (superseding an earlier draft that added them as
+separate feature modules). No other file was modified.
+
+- **ACC -- Stop-and-Go Assist**: `hold_at_stop()` and `resume_when_lead_departs()`
+  added to `features/acc.py`. `acc.py` gained a new dependency on
+  `common/driver_monitoring.py` (previously only used by LKA/TJA) for its
+  autonomous-hold timeout check.
+- **AEB -- Junction & Cross-Traffic Braking**: `trigger_cross_traffic_braking()`,
+  `issue_cross_traffic_warning()`, and `_nearest_cross_traffic_object()` added
+  to `features/aeb.py`, reusing the perception helpers AEB already imports.
+
+Change-impact consequence: a future change to `acc.py` now requires
+re-validating ACC itself, TJA (existing direct-call dependency), and the new
+Stop-and-Go behavior together, since it is the same file. A future change to
+`aeb.py` now requires re-validating AEB itself and the new Junction/
+Cross-Traffic Braking behavior together, for the same reason. `common/driver_monitoring.py`
+now affects ACC, LKA, and TJA (up from LKA and TJA only).

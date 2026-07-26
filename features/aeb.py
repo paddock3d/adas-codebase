@@ -29,3 +29,38 @@ def issue_precollision_warning(state, warning_lead_time_s=0.6):
     obj = nearest_object_in_zone(state, ("forward",))
     ttc = time_to_collision(obj)
     return ttc is not None and ttc <= warning_lead_time_s
+
+
+def _nearest_cross_traffic_object(state):
+    """Nearest object among the left/right cross-traffic zones, or None."""
+    left = nearest_object_in_zone(state, ("cross_left",))
+    right = nearest_object_in_zone(state, ("cross_right",))
+    candidates = [o for o in (left, right) if o is not None]
+    if not candidates:
+        return None
+    return min(candidates, key=lambda o: o.relative_distance_m)
+
+
+def trigger_cross_traffic_braking(state, ttc_threshold_s=0.8):
+    """Returns True if autonomous braking should be triggered for a crossing
+    object at a junction (Junction & Cross-Traffic Braking). Checks the
+    existing forward-collision trigger first -- if that is already braking
+    for a forward hazard this cycle, junction/cross-traffic braking does not
+    also fire, to avoid two conflicting brake commands for the same event.
+    """
+    if trigger_autonomous_braking(state):
+        return False
+    obj = _nearest_cross_traffic_object(state)
+    ttc = time_to_collision(obj)
+    return ttc is not None and ttc <= ttc_threshold_s
+
+
+def issue_cross_traffic_warning(state, warning_lead_time_s=1.2):
+    """Returns True if a pre-collision warning for crossing traffic should be
+    raised, i.e. TTC to the nearest cross-traffic object is within
+    `warning_lead_time_s` of the junction/cross-traffic braking trigger
+    point.
+    """
+    obj = _nearest_cross_traffic_object(state)
+    ttc = time_to_collision(obj)
+    return ttc is not None and ttc <= warning_lead_time_s

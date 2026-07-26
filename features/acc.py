@@ -7,6 +7,7 @@ not represent any production vehicle software.
 """
 from common.vehicle_state import VehicleState, DetectedObject
 from common.perception import nearest_object_in_zone
+from common.driver_monitoring import duration_exceeded
 
 
 def _speed_to_throttle(current_kph, set_kph, gain=0.05):
@@ -35,3 +36,32 @@ def disengage_on_low_confidence(state, confidence_threshold=0.5):
     lead = nearest_object_in_zone(state, ("forward",))
     low_confidence = lead is not None and lead.confidence < confidence_threshold
     return low_confidence or state.driver_brake_input > 0.0
+
+
+def hold_at_stop(state, stop_gap_m=3.0, stopped_speed_kph=2.0):
+    """Returns True (Stop-and-Go holds the vehicle stationary) if the ego
+    vehicle is already at or below `stopped_speed_kph` and the nearest
+    forward object is within `stop_gap_m` -- i.e. queued directly behind a
+    stopped lead vehicle, not merely slowing toward one further away.
+    """
+    if state.speed_kph > stopped_speed_kph:
+        return False
+    lead = nearest_object_in_zone(state, ("forward",))
+    return lead is not None and lead.relative_distance_m <= stop_gap_m
+
+
+def resume_when_lead_departs(state, stop_duration_s, set_speed_kph,
+                              resume_gap_m=6.0, max_autonomous_hold_s=180.0):
+    """Returns True (Stop-and-Go resumes normal ACC control and moves off)
+    once the lead has pulled at least `resume_gap_m` ahead and ACC's own
+    following-distance command for `set_speed_kph` calls for forward
+    throttle rather than braking. Returns False (stay held, hand back to
+    the driver) once `stop_duration_s` exceeds `max_autonomous_hold_s`.
+    """
+    if duration_exceeded(stop_duration_s, max_autonomous_hold_s):
+        return False
+    lead = nearest_object_in_zone(state, ("forward",))
+    if lead is not None and lead.relative_distance_m < resume_gap_m:
+        return False
+    command = maintain_following_distance(state, set_speed_kph)
+    return command["throttle"] > 0.0
