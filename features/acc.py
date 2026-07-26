@@ -38,7 +38,7 @@ def disengage_on_low_confidence(state, confidence_threshold=0.5):
     return low_confidence or state.driver_brake_input > 0.0
 
 
-def hold_at_stop(state, stop_gap_m=3.0, stopped_speed_kph=2.0):
+def hold_at_stop(state, stop_gap_m=3.0, stopped_speed_kph=3.0):
     """Returns True (Stop-and-Go holds the vehicle stationary) if the ego
     vehicle is already at or below `stopped_speed_kph` and the nearest
     forward object is within `stop_gap_m` -- i.e. queued directly behind a
