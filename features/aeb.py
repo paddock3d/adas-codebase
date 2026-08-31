@@ -10,7 +10,7 @@ from common.perception import nearest_object_in_zone, time_to_collision
 from common.driver_response import driver_has_responded
 
 
-def trigger_autonomous_braking(state, ttc_threshold_s=0.5, driver_brake_threshold=0.7):
+def trigger_autonomous_braking(state, ttc_threshold_s=1.5, driver_brake_threshold=0.7):
     """Returns True if autonomous full braking should be triggered: an object
     is on a collision course within `ttc_threshold_s` and the driver has not
     applied sufficient braking or steering to avoid it.
